@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
 
-from typing import Literal, Tuple
+from typing import Literal, Tuple, Optional
 from os import listdir
 from os.path import join, dirname
 from joblib import load
@@ -206,15 +206,20 @@ class LongTermForecast:
             raise ValueError("date column contains non-continuous values")
 
     @staticmethod
-    def visual(input_seq: pd.DataFrame, output_seq: pd.DataFrame, variable: str, save_path: str):
+    def visual(input_seq: pd.DataFrame, output_seq: pd.DataFrame, variable: str, save_path: str, 
+               ground_truth: Optional[pd.DataFrame] = None):
         input_seq["date"] = pd.to_datetime(input_seq["date"])
         input_seq.sort_values("date", ascending=True, inplace=True)
 
+        if ground_truth is not None:
+            ground_truth["date"] = pd.to_datetime(ground_truth["date"])
+            ground_truth.sort_values("date", ascending=True, inplace=True)
+
         fig, ax = plt.subplots(1, 1)
-        assert variable in input_seq.columns.to_list()
-        assert variable in output_seq.columns.to_list()
         input_seq.set_index("date")[[variable]].rename(columns={variable: "Input Sequence"}).plot(ax=ax)
         output_seq.set_index("date")[[variable]].rename(columns={variable: "Prediction"}).plot(ax=ax)
+        if ground_truth is not None:
+            ground_truth.set_index("date")[[variable]].rename(columns={variable: "GroundTruth"}).plot(ax=ax)
 
         plt.savefig(save_path, bbox_inches="tight")
         
