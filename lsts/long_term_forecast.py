@@ -59,7 +59,7 @@ class LongTermForecast:
         scaler = load(scaler_path)
         return scaler
         
-    def __get_lstm_configs(self, pred_len: PRED_LEN):
+    def _get_lstm_configs(self, pred_len: PRED_LEN):
         class Args():
             def __init__(self) -> None:
                 self.task_name = "long_term_forecast"
@@ -74,7 +74,7 @@ class LongTermForecast:
         args = Args()
         return args
     
-    def __get_timesnet_configs(self, pred_len: PRED_LEN):
+    def _get_timesnet_configs(self, pred_len: PRED_LEN):
         class Args():
             def __init__(self) -> None:
                 self.seq_len = 512
@@ -94,7 +94,7 @@ class LongTermForecast:
         args = Args()
         return args
     
-    def __get_patchtst_configs(self, pred_len: PRED_LEN):
+    def _get_patchtst_configs(self, pred_len: PRED_LEN):
         class Args():
             def __init__(self) -> None:
                 self.task_name = "long_term_forecast"
@@ -112,7 +112,7 @@ class LongTermForecast:
         args = Args()
         return args
     
-    def __get_dlinear_configs(self, pred_len: PRED_LEN):
+    def _get_dlinear_configs(self, pred_len: PRED_LEN):
         class Args():
             def __init__(self) -> None:
                 self.task_name = "long_term_forecast"
@@ -123,7 +123,7 @@ class LongTermForecast:
         args = Args()
         return args
     
-    def __get_itransformer_configs(self, pred_len: PRED_LEN):
+    def _get_itransformer_configs(self, pred_len: PRED_LEN):
         class Args():
             def __init__(self) -> None:
                 self.task_name = "long_term_forecast"
@@ -144,15 +144,15 @@ class LongTermForecast:
 
     def _build_model(self) -> nn.Module:
         if self.model_name == "LSTM":
-            model = self.model_dict[self.model_name].Model(self.__get_lstm_configs(self.pred_len)).float()
+            model = self.model_dict[self.model_name].Model(self._get_lstm_configs(self.pred_len)).float()
         elif self.model_name == "TimesNet":
-            model = self.model_dict[self.model_name].Model(self.__get_timesnet_configs(self.pred_len)).float()
+            model = self.model_dict[self.model_name].Model(self._get_timesnet_configs(self.pred_len)).float()
         elif self.model_name == "PatchTST":
-            model = self.model_dict[self.model_name].Model(self.__get_patchtst_configs(self.pred_len)).float()
+            model = self.model_dict[self.model_name].Model(self._get_patchtst_configs(self.pred_len)).float()
         elif self.model_name == "DLinear":
-            model = self.model_dict[self.model_name].Model(self.__get_dlinear_configs(self.pred_len)).float()
+            model = self.model_dict[self.model_name].Model(self._get_dlinear_configs(self.pred_len)).float()
         elif self.model_name == "iTransformer":
-            model = self.model_dict[self.model_name].Model(self.__get_itransformer_configs(self.pred_len)).float()
+            model = self.model_dict[self.model_name].Model(self._get_itransformer_configs(self.pred_len)).float()
         return model
     
     def pred(self, input_seq: pd.DataFrame) -> pd.DataFrame:
