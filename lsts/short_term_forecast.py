@@ -35,13 +35,13 @@ class ShortTermForecast(LongTermForecast):
         scaler = load(scaler_path)
         return scaler
     
-    def _get_lstm_configs(self, pred_len):
+    def _get_lstm_configs(self, pred_len: int):
         args = super()._get_lstm_configs(pred_len)
         args.task_name = self.task_name
         args.seq_len = 48
         return args
     
-    def _get_timesnet_configs(self, pred_len):
+    def _get_timesnet_configs(self, pred_len: int):
         args = super()._get_timesnet_configs(pred_len)
         args.seq_len = 48
         args.d_model = 16
@@ -50,19 +50,19 @@ class ShortTermForecast(LongTermForecast):
         args.label_len = 48 // 2
         return args
     
-    def _get_patchtst_configs(self, pred_len):
+    def _get_patchtst_configs(self, pred_len: int):
         args = super()._get_patchtst_configs(pred_len)
         args.task_name = self.task_name
         args.seq_len = 48
         return args
     
-    def _get_dlinear_configs(self, pred_len):
+    def _get_dlinear_configs(self, pred_len: int):
         args = super()._get_dlinear_configs(pred_len)
         args.task_name = self.task_name
         args.seq_len = 48
         return args
     
-    def _get_itransformer_configs(self, pred_len):
+    def _get_itransformer_configs(self, pred_len: int):
         args = super()._get_itransformer_configs(pred_len)
         args.task_name = self.task_name
         args.seq_len = 48

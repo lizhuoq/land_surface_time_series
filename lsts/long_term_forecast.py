@@ -16,7 +16,7 @@ from .utils.timefeatures import time_features
 
 MODEL_NAME = Literal["iTransformer", "LSTM", "PatchTST", "DLinear", "TimesNet"]
 VARIABLE = Literal["air_temperature", "precipitation", "snow_depth", "snow_water_equivalent", "soil_moisture", "soil_suction", "soil_temperature", "surface_temperature"]
-STRATEGY = Literal["single", "ensemble"]
+# STRATEGY = Literal["single", "ensemble"]
 PRED_LEN = Literal[96, 192, 336, 720]
 __CURRENT_DIR = dirname(__file__)
 CHECKPOINT_ROOT = join(__CURRENT_DIR, "checkpoints")
