@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import numpy as np
 import torch
@@ -116,3 +117,20 @@ def adjustment(gt, pred):
 
 def cal_accuracy(y_pred, y_true):
     return np.mean(y_pred == y_true)
+
+
+def download_checkpoints(local_dir: str, token: Optional[str] = None, max_workers: Optional[int] = None) -> None:
+    from huggingface_hub import snapshot_download
+
+    if token is None:
+        # public
+        snapshot_download(
+            repo_id="lizhuoqun/land_surface_time_series", 
+            local_dir=local_dir, max_workers=max_workers 
+        )
+    else:
+        # private
+        snapshot_download(
+            repo_id="lizhuoqun/land_surface_time_series", 
+            local_dir=local_dir, token=token, max_workers=max_workers
+        )

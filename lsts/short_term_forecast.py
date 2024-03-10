@@ -1,12 +1,12 @@
 from .long_term_forecast import *
 
 __CURRENT_DIR = dirname(__file__)
-CHECKPOINT_ROOT = join(__CURRENT_DIR, "checkpoints")
+# CHECKPOINT_ROOT = join(__CURRENT_DIR, "checkpoints")
 SCALER_ROOT = join(__CURRENT_DIR, "scaler")
 
 
 class ShortTermForecast(LongTermForecast):
-    def __init__(self, variable: VARIABLE, model_name: MODEL_NAME = "iTransformer") -> None:
+    def __init__(self, variable: VARIABLE, model_name: MODEL_NAME = "iTransformer", checkpoints_dir: Optional[str] = None) -> None:
         self.model_dict = {
             "LSTM": LSTM, 
             "iTransformer": iTransformer, 
@@ -14,6 +14,7 @@ class ShortTermForecast(LongTermForecast):
             "DLinear": DLinear, 
             "TimesNet": TimesNet
         }
+        self.checkpoints_dir = "checkpoints" if checkpoints_dir is None else checkpoints_dir
         self.variable = variable
         self.pred_len = 48
         self.model_name = model_name
@@ -22,11 +23,11 @@ class ShortTermForecast(LongTermForecast):
         self.scaler = self.__load_scaler()      
 
     def __load_checkpoint(self, model: nn.Module) -> nn.Module:
-        checkpoint_path = [x for x in listdir(CHECKPOINT_ROOT) 
+        checkpoint_path = [x for x in listdir(self.checkpoints_dir) 
                            if x.startswith(f"short_term_forecast_ismn_{self.variable}_48_48_{self.model_name}")]
         assert len(checkpoint_path) == 1
         checkpoint_path = checkpoint_path[0]
-        checkpoint_path = join(CHECKPOINT_ROOT, checkpoint_path, "checkpoint.pth")
+        checkpoint_path = join(self.checkpoints_dir, checkpoint_path, "checkpoint.pth")
         model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"))
         return model
     

@@ -13,13 +13,14 @@ import warnings
 
 from .models import LSTM, iTransformer, PatchTST, DLinear, TimesNet
 from .utils.timefeatures import time_features
+from .utils.tools import download_checkpoints
 
 MODEL_NAME = Literal["iTransformer", "LSTM", "PatchTST", "DLinear", "TimesNet"]
 VARIABLE = Literal["air_temperature", "precipitation", "snow_depth", "snow_water_equivalent", "soil_moisture", "soil_suction", "soil_temperature", "surface_temperature"]
 # STRATEGY = Literal["single", "ensemble"]
 PRED_LEN = Literal[96, 192, 336, 720]
 __CURRENT_DIR = dirname(__file__)
-CHECKPOINT_ROOT = join(__CURRENT_DIR, "checkpoints")
+# CHECKPOINT_ROOT = join(__CURRENT_DIR, "checkpoints")
 SCALER_ROOT = join(__CURRENT_DIR, "scaler")
 
 warnings.filterwarnings("ignore", message="Trying to unpickle estimator StandardScaler from version .* when using version .*")
@@ -29,7 +30,8 @@ warnings.filterwarnings("ignore", message="X does not have valid feature names, 
 class LongTermForecast:
     def __init__(self, 
                  pred_len: PRED_LEN,  
-                 variable: VARIABLE,  
+                 variable: VARIABLE, 
+                 checkpoints_dir: Optional[str] = None, 
                  model_name: MODEL_NAME = "iTransformer") -> None:
         self.model_dict = {
             "LSTM": LSTM, 
@@ -39,6 +41,7 @@ class LongTermForecast:
             "TimesNet": TimesNet
         }
         # freq "h"
+        self.checkpoints_dir = "checkpoints" if checkpoints_dir is None else checkpoints_dir
         self.variable = variable
         self.pred_len = pred_len
         self.model_name = model_name
@@ -46,11 +49,11 @@ class LongTermForecast:
         self.scaler = self.__load_scaler()
 
     def __load_checkpoint(self, model: nn.Module) -> nn.Module:
-        checkpoint_path = [x for x in listdir(CHECKPOINT_ROOT) 
+        checkpoint_path = [x for x in listdir(self.checkpoints_dir) 
                            if x.startswith(f"long_term_forecast_ismn_{self.variable}_512_{self.pred_len}_{self.model_name}")]
         assert len(checkpoint_path) == 1
         checkpoint_path = checkpoint_path[0]
-        checkpoint_path = join(CHECKPOINT_ROOT, checkpoint_path, "checkpoint.pth")
+        checkpoint_path = join(self.checkpoints_dir, checkpoint_path, "checkpoint.pth")
         model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"))
         return model
     
@@ -206,7 +209,7 @@ class LongTermForecast:
             raise ValueError("date column contains non-continuous values")
 
     @staticmethod
-    def visual(input_seq: pd.DataFrame, output_seq: pd.DataFrame, variable: str, save_path: str, 
+    def visual(input_seq: pd.DataFrame, output_seq: pd.DataFrame, variable: VARIABLE, save_path: str, 
                ground_truth: Optional[pd.DataFrame] = None):
         input_seq["date"] = pd.to_datetime(input_seq["date"])
         input_seq.sort_values("date", ascending=True, inplace=True)

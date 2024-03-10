@@ -1,12 +1,15 @@
 from .long_term_forecast import *
 
 __CURRENT_DIR = dirname(__file__)
-CHECKPOINT_ROOT = join(__CURRENT_DIR, "checkpoints")
+# CHECKPOINT_ROOT = join(__CURRENT_DIR, "checkpoints")
 SCALER_ROOT = join(__CURRENT_DIR, "scaler")
 
 
 class Imputation(LongTermForecast):
-    def __init__(self, variable: VARIABLE, model_name: MODEL_NAME) -> None:
+    def __init__(self, 
+                 variable: VARIABLE, 
+                 model_name: MODEL_NAME = "TimesNet", 
+                 checkpoints_dir: Optional[str] = None) -> None:
         self.model_dict = {
             "LSTM": LSTM, 
             "iTransformer": iTransformer, 
@@ -14,6 +17,7 @@ class Imputation(LongTermForecast):
             "DLinear": DLinear, 
             "TimesNet": TimesNet
         }
+        self.checkpoints_dir = "checkpoints" if checkpoints_dir is None else checkpoints_dir
         self.variable = variable
         self.model_name = model_name
         self.task_name = "imputation"
@@ -22,11 +26,11 @@ class Imputation(LongTermForecast):
         self.scaler = self.__load_scaler()
 
     def __load_checkpoint(self, model: nn.Module) -> nn.Module:
-        checkpoint_path = [x for x in listdir(CHECKPOINT_ROOT) 
+        checkpoint_path = [x for x in listdir(self.checkpoints_dir) 
                            if x.startswith(f"imputation_ismn_{self.variable}_mask_0.5_{self.model_name}")]
         assert len(checkpoint_path) == 1
         checkpoint_path = checkpoint_path[0]
-        checkpoint_path = join(CHECKPOINT_ROOT, checkpoint_path, "checkpoint.pth")
+        checkpoint_path = join(self.checkpoints_dir, checkpoint_path, "checkpoint.pth")
         model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"))
         return model
     
