@@ -5,17 +5,16 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
 
-from typing import Literal, Tuple, Optional
+from typing import Literal, Tuple, Optional, List
 from os import listdir
 from os.path import join, dirname
 from joblib import load
 import warnings
 
-from .models import LSTM, iTransformer, PatchTST, DLinear, TimesNet
+from .models import LSTM, iTransformer, PatchTST, DLinear, TimesNet, EALSTM
 from .utils.timefeatures import time_features
-from .utils.tools import download_checkpoints
 
-MODEL_NAME = Literal["iTransformer", "LSTM", "PatchTST", "DLinear", "TimesNet"]
+MODEL_NAME = Literal["iTransformer", "LSTM", "PatchTST", "DLinear", "TimesNet", "EALSTM"]
 VARIABLE = Literal["air_temperature", "precipitation", "snow_depth", "snow_water_equivalent", "soil_moisture", "soil_suction", "soil_temperature", "surface_temperature"]
 # STRATEGY = Literal["single", "ensemble"]
 PRED_LEN = Literal[96, 192, 336, 720]
@@ -38,7 +37,8 @@ class LongTermForecast:
             "iTransformer": iTransformer, 
             "PatchTST": PatchTST, 
             "DLinear": DLinear, 
-            "TimesNet": TimesNet
+            "TimesNet": TimesNet, 
+            "EALSTM": EALSTM
         }
         # freq "h"
         self.checkpoints_dir = "checkpoints" if checkpoints_dir is None else checkpoints_dir
@@ -144,6 +144,13 @@ class LongTermForecast:
                 self.e_layers = 3
         args = Args()
         return args
+    
+    def _get_ealstm_configs(self, pred_len: PRED_LEN):
+        args = self._get_lstm_configs(pred_len)
+        args.numeric_stat_in = 5 if self.variable in ["precipitation", "air_temperature"] else 10
+        args.d_model = 256
+        args.dropout = 0.4
+        return args
 
     def _build_model(self) -> nn.Module:
         if self.model_name == "LSTM":
@@ -156,9 +163,13 @@ class LongTermForecast:
             model = self.model_dict[self.model_name].Model(self._get_dlinear_configs(self.pred_len)).float()
         elif self.model_name == "iTransformer":
             model = self.model_dict[self.model_name].Model(self._get_itransformer_configs(self.pred_len)).float()
+        elif self.model_name == "EALSTM":
+            model = self.model_dict[self.model_name].Model(self._get_ealstm_configs(self.pred_len)).float()
         return model
     
-    def pred(self, input_seq: pd.DataFrame) -> pd.DataFrame:
+    def pred(self, input_seq: pd.DataFrame, static_variable: Optional[dict] = None) -> pd.DataFrame:
+        if self.model_name == "EALSTM":
+            return self.pred_ealstm(input_seq, static_variable)
         # [date, variable]
         self.model.eval()
         x_enc, x_mark_enc = self.preprocess(input_seq)
@@ -170,6 +181,45 @@ class LongTermForecast:
         time_series = pd.date_range(start=start_time, periods=self.pred_len, freq="h")
         df_output = pd.DataFrame({"date": time_series, self.variable: output})
         return df_output
+    
+    def pred_ealstm(self, input_seq: pd.DataFrame, static_variable: pd.Series) -> pd.DataFrame:
+        if static_variable is None:
+            raise ValueError("static_variable cannot be None.")
+        self.model.eval()
+        x_enc, x_mark_enc = self.preprocess(input_seq)
+        numeric_s, climate_c, lc_s = self.preprocess_static(static_variable)
+        output = self.model(x_enc, numeric_s, climate_c, lc_s).squeeze(0).detach().numpy()
+        output = self.inverse_transforme(output)[:, 0]
+
+        input_seq["date"] = pd.to_datetime(input_seq["date"])
+        start_time = input_seq["date"].max() + pd.Timedelta(hours=1)
+        time_series = pd.date_range(start=start_time, periods=self.pred_len, freq="h")
+        df_output = pd.DataFrame({"date": time_series, self.variable: output})
+        return df_output
+
+    def preprocess_static(self, static_variable: pd.Series) -> Tuple[torch.Tensor]:
+        if self.variable in ["precipitation", "air_temperature"]:
+            numeric_columns = [("elevation", "val"), ("latitude", "val"), ("longitude", "val"), 
+                                ("variable", "depth_from"), ("variable", "depth_to")]
+        else:
+            numeric_columns = [("elevation", "val"), ("latitude", "val"), ("longitude", "val"), 
+                                ("variable", "depth_from"), ("variable", "depth_to"), ("clay_fraction", "val"), 
+                                ("organic_carbon", "val"), ("sand_fraction", "val"), ("saturation", "val"), 
+                                ("silt_fraction", "val")]
+        climate_KG = ['Af', 'Am', 'Aw', 'BSh', 'BSk', 'BWh', 'BWk', 'Cfa', 'Cfb', 'Cfc', 'Csa', 'Csb', 'Cwa', 
+                      'Cwb', 'Dfa', 'Dfb', 'Dfc', 'Dfd', 'Dsa', 'Dsb', 'Dsc', 'Dwa', 'Dwb', 'Dwc', 'EF', 'ET']
+        lc = [10, 11, 12, 20, 30, 40, 50, 60, 61, 62, 70, 80, 90, 100, 110, 120, 130, 140, 150, 152, 160, 180, 
+              190, 200, 201, 210, 220]
+        climate_KG_dict = {x: i for i, x in enumerate(climate_KG)}
+        lc_dict = {x: i for i, x in enumerate(lc)}
+
+        numeric_s = static_variable[numeric_columns].values
+        numeric_s = numeric_s.astype(np.float32)
+        climate_s = np.array([climate_KG_dict[static_variable[("climate_KG", "val")]]])
+        lc_s = np.array([lc_dict[static_variable[("lc_2000", "val")]], 
+                         lc_dict[static_variable[("lc_2005", "val")]], 
+                         lc_dict[static_variable[("lc_2010", "val")]]])
+        return torch.tensor(numeric_s).float().unsqueeze(0), torch.tensor(climate_s).long().unsqueeze(0), torch.tensor(lc_s).long().unsqueeze(0)
 
     def preprocess(self, input_seq: pd.DataFrame) -> Tuple[torch.Tensor]:
         self.check_dataframe_length(input_seq, 512)
@@ -225,4 +275,12 @@ class LongTermForecast:
             ground_truth.set_index("date")[[variable]].rename(columns={variable: "GroundTruth"}).plot(ax=ax)
 
         plt.savefig(save_path, bbox_inches="tight")
-        
+
+    # def finetune(self, time_series: pd.DataFrame | List[pd.DataFrame]):
+    #     if isinstance(time_series, pd.DataFrame):
+    #         self.check_dataframe_length(time_series, 512 + self.pred_len)
+    #         self.check_time_continuity(time_series)
+    #     elif isinstance(time_series, list):
+    #         for data in time_series:
+    #             self.check_dataframe_length(data, 512 + self.pred_len)
+    #             self.check_time_continuity(data)
