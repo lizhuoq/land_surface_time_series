@@ -270,9 +270,11 @@ class LongTermForecast:
 
         fig, ax = plt.subplots(1, 1)
         input_seq.set_index("date")[[variable]].rename(columns={variable: "Input Sequence"}).plot(ax=ax)
-        output_seq.set_index("date")[[variable]].rename(columns={variable: "Prediction"}).plot(ax=ax)
+        output_seq.set_index("date")[[variable]].rename(columns={variable: "Prediction"}).plot(ax=ax, marker="^", linestyle="-.", 
+                                                                                               markersize=4, linewidth=1)
         if ground_truth is not None:
-            ground_truth.set_index("date")[[variable]].rename(columns={variable: "GroundTruth"}).plot(ax=ax)
+            ground_truth.set_index("date")[[variable]].rename(columns={variable: "GroundTruth"}).plot(ax=ax, marker="o", linestyle="-.", 
+                                                                                                      markersize=4, linewidth=1)
 
         plt.savefig(save_path, bbox_inches="tight")
 

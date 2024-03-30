@@ -12,7 +12,8 @@ class ShortTermForecast(LongTermForecast):
             "iTransformer": iTransformer, 
             "PatchTST": PatchTST, 
             "DLinear": DLinear, 
-            "TimesNet": TimesNet
+            "TimesNet": TimesNet, 
+            "EALSTM": EALSTM
         }
         self.checkpoints_dir = "checkpoints" if checkpoints_dir is None else checkpoints_dir
         self.variable = variable
@@ -69,6 +70,12 @@ class ShortTermForecast(LongTermForecast):
         args.seq_len = 48
         return args
     
+    def _get_ealstm_configs(self, pred_len: int):
+        args = super()._get_ealstm_configs(pred_len)
+        args.task_name = self.task_name
+        args.seq_len = 48
+        return args
+    
     def _build_model(self) -> nn.Module:
         if self.model_name == "LSTM":
             model = self.model_dict[self.model_name].Model(self._get_lstm_configs(self.pred_len)).float()
@@ -80,6 +87,8 @@ class ShortTermForecast(LongTermForecast):
             model = self.model_dict[self.model_name].Model(self._get_dlinear_configs(self.pred_len)).float()
         elif self.model_name == "iTransformer":
             model = self.model_dict[self.model_name].Model(self._get_itransformer_configs(self.pred_len)).float()
+        elif self.model_name == "EALSTM":
+            model = self.model_dict[self.model_name].Model(self._get_ealstm_configs(self.pred_len)).float()
         return model
     
     def preprocess(self, input_seq: pd.DataFrame) -> Tuple[torch.Tensor]:

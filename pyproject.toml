@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lsts"
-version = "0.1.0"
+version = "0.2.0"
 description = "A lightweight, fast, advanced deep learning time series package for long and short-term forecast and missing value imputation of land surface variables."
 authors = ["lizhuoq <m15004059308@163.com>"]
 license = "cc-by-4.0"

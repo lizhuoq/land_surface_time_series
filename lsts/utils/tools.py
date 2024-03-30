@@ -6,6 +6,7 @@ import torch
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
+from huggingface_hub import snapshot_download
 
 plt.switch_backend('agg')
 
@@ -120,8 +121,6 @@ def cal_accuracy(y_pred, y_true):
 
 
 def download_checkpoints(local_dir: str, token: Optional[str] = None, max_workers: Optional[int] = None) -> None:
-    from huggingface_hub import snapshot_download
-
     if token is None:
         # public
         snapshot_download(

@@ -15,7 +15,8 @@ class Imputation(LongTermForecast):
             "iTransformer": iTransformer, 
             "PatchTST": PatchTST, 
             "DLinear": DLinear, 
-            "TimesNet": TimesNet
+            "TimesNet": TimesNet, 
+            "EALSTM": EALSTM
         }
         self.checkpoints_dir = "checkpoints" if checkpoints_dir is None else checkpoints_dir
         self.variable = variable
@@ -57,6 +58,13 @@ class Imputation(LongTermForecast):
         args.pred_len = 0
         return args
     
+    def _get_ealstm_configs(self, pred_len: int):
+        args = super()._get_ealstm_configs(pred_len)
+        args.task_name = self.task_name
+        args.seq_len = 96
+        args.pred_len = 0
+        return args
+
     def _get_patchtst_configs(self, pred_len: int):
         args = super()._get_patchtst_configs(pred_len)
         args.task_name = self.task_name
@@ -78,10 +86,32 @@ class Imputation(LongTermForecast):
         args.pred_len = 0
         return args
     
-    def pred(self, input_seq: pd.DataFrame) -> pd.DataFrame:
+    def pred(self, input_seq: pd.DataFrame, static_variable: pd.Series) -> pd.DataFrame:
+        if self.model_name == "EALSTM":
+            return self.pred_ealstm(input_seq, static_variable)
         self.model.eval()
         x_enc, x_mark_enc, mask = self.preprocess(input_seq)
         output = self.model(x_enc, x_mark_enc, None, None, mask).squeeze(0).detach().numpy()
+        output = self.inverse_transforme(output)[:, 0]
+
+        mask = mask.squeeze(0).numpy()[:, 0]
+        x_enc = self.inverse_transforme(x_enc.squeeze(0).numpy())[:, 0]
+        output = np.where(mask==0, output, x_enc)
+
+        input_seq["date"] = pd.to_datetime(input_seq["date"])
+        date = input_seq["date"].sort_values(ascending=True)
+        df_output = pd.DataFrame({
+            "date": date, self.variable: output
+        })
+        return df_output
+    
+    def pred_ealstm(self, input_seq: pd.DataFrame, static_variable: pd.Series) -> pd.DataFrame:
+        if static_variable is None:
+            raise ValueError("static_variable cannot be None.")
+        self.model.eval()
+        x_enc, x_mark_enc, mask = self.preprocess(input_seq)
+        numeric_s, climate_c, lc_s = self.preprocess_static(static_variable)
+        output = self.model(x_enc, numeric_s, climate_c, lc_s).squeeze(0).detach().numpy()
         output = self.inverse_transforme(output)[:, 0]
 
         mask = mask.squeeze(0).numpy()[:, 0]
