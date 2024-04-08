@@ -6,7 +6,7 @@ SCALER_ROOT = join(__CURRENT_DIR, "scaler")
 
 
 class ShortTermForecast(LongTermForecast):
-    def __init__(self, variable: VARIABLE, model_name: MODEL_NAME = "iTransformer", checkpoints_dir: Optional[str] = None) -> None:
+    def __init__(self, variable: VARIABLE, model_name: MODEL_NAME = "TimesNet", checkpoints_dir: Optional[str] = None) -> None:
         self.model_dict = {
             "LSTM": LSTM, 
             "iTransformer": iTransformer, 
