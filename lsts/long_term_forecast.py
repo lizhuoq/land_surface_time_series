@@ -279,12 +279,3 @@ class LongTermForecast:
             #                                                                                           markersize=4, linewidth=1)
 
         plt.savefig(save_path, bbox_inches="tight")
-
-    # def finetune(self, time_series: pd.DataFrame | List[pd.DataFrame]):
-    #     if isinstance(time_series, pd.DataFrame):
-    #         self.check_dataframe_length(time_series, 512 + self.pred_len)
-    #         self.check_time_continuity(time_series)
-    #     elif isinstance(time_series, list):
-    #         for data in time_series:
-    #             self.check_dataframe_length(data, 512 + self.pred_len)
-    #             self.check_time_continuity(data)

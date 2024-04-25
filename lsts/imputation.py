@@ -86,7 +86,7 @@ class Imputation(LongTermForecast):
         args.pred_len = 0
         return args
     
-    def pred(self, input_seq: pd.DataFrame, static_variable: pd.Series) -> pd.DataFrame:
+    def pred(self, input_seq: pd.DataFrame, static_variable: Optional[pd.Series] = None) -> pd.DataFrame:
         if self.model_name == "EALSTM":
             return self.pred_ealstm(input_seq, static_variable)
         self.model.eval()
