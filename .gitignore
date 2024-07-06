@@ -1,1 +1,7 @@
 checkpoints/
+
+*.drawio
+*.ipynb
+*.csv
+test_data
+test_pics
