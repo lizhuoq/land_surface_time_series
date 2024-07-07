@@ -92,4 +92,4 @@ imputer.visual(
 )
 ```
 ## Conclusion
-You are now ready to start using LSTS. For more detailed instructions and, refer to our paper(under review). If you have any questions, please feel free to contact us.
+You are now ready to start using LSTS. For more detailed instructions, refer to our paper(under review). If you have any questions, please feel free to contact us.
