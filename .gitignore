@@ -1,8 +1,15 @@
 checkpoints/
 
 *.drawio
-*.ipynb
-*.csv
 test_data
 test_pics
 pics
+test/checkpoints.zip
+test/density_plot
+test/python_metadata
+test/spatial_plot
+ismn_metadata.csv
+test/resources.pdf
+temp.ipynb
+visual_paper.ipynb
+visual.ipynb
