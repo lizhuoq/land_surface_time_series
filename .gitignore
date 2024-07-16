@@ -13,3 +13,4 @@ test/resources.pdf
 temp.ipynb
 visual_paper.ipynb
 visual.ipynb
+*.zip
